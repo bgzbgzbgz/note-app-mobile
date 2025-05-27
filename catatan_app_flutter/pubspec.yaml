@@ -1,19 +1,23 @@
 name: note_app_mobile
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: 'none' # Jangan publikasikan package ini
 version: 0.1.0
 
 environment:
-  sdk: ^3.7.0
+  sdk: '>=3.0.0 <4.0.0' # Atau sesuaikan dengan versi SDK Flutter-mu
 
 dependencies:
   flutter:
     sdk: flutter
 
+  # PASTIKAN BARIS-BARIS INI ADA:
+  http: ^1.2.1 # Versi bisa berbeda, sesuaikan dengan yang terbaru jika perlu
+  shared_preferences: ^2.2.3 # Versi bisa berbeda
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^4.0.0 # Atau ^5.0.0 yang kamu pakai
 
 flutter:
   uses-material-design: true

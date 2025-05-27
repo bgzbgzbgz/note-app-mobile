@@ -1,31 +1,185 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'services/api_service.dart'; //
-import 'models/note.dart';         //
-import 'screens/add_note_screen.dart'; //
+import 'package:shared_preferences/shared_preferences.dart';
+import 'services/api_service.dart'; 
+import 'models/note.dart';         
+import 'screens/add_note_screen.dart'; 
 import 'screens/edit_note_screen.dart';
+import 'screens/note_view_screen.dart'; 
+
+// --- TEMA ---
+final ThemeData lightTheme = ThemeData(
+  brightness: Brightness.light,
+  primarySwatch: Colors.blue,
+  colorScheme: ColorScheme.light(
+    primary: Colors.blue.shade700,
+    secondary: Colors.lightBlue.shade300,
+    surface: Colors.white,
+    background: Colors.grey.shade200,
+    error: Colors.red.shade700,
+    onPrimary: Colors.white,
+    onSecondary: Colors.black,
+    onSurface: Colors.black,
+    onBackground: Colors.black,
+    onError: Colors.white,
+  ),
+  scaffoldBackgroundColor: Colors.grey.shade200, //
+  appBarTheme: AppBarTheme(
+    color: Colors.blue.shade700,
+    elevation: 4,
+    titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500),
+    iconTheme: IconThemeData(color: Colors.white),
+  ),
+  cardTheme: CardTheme(
+    elevation: 1.5,
+    margin: EdgeInsets.all(8.0),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+    color: Colors.white,
+  ),
+  floatingActionButtonTheme: FloatingActionButtonThemeData(
+    backgroundColor: Colors.blue.shade700,
+    foregroundColor: Colors.white,
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.blue.shade600,
+      foregroundColor: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      textStyle: TextStyle(fontSize: 16),
+    ),
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8.0),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8.0),
+      borderSide: BorderSide(color: Colors.blue.shade700, width: 2.0),
+    ),
+    labelStyle: TextStyle(color: Colors.blue.shade800),
+  ),
+);
+
+final ThemeData darkTheme = ThemeData(
+  brightness: Brightness.dark,
+  primarySwatch: Colors.blue,
+  colorScheme: ColorScheme.dark(
+    primary: Colors.blue.shade400,
+    secondary: Colors.lightBlue.shade700,
+    surface: Color(0xFF2c2c2e),
+    background: Color(0xFF1c1c1e),
+    error: Colors.red.shade400,
+    onPrimary: Colors.black,
+    onSecondary: Colors.white,
+    onSurface: Colors.white,
+    onBackground: Colors.white,
+    onError: Colors.black,
+  ),
+  scaffoldBackgroundColor: Color(0xFF1c1c1e), //
+  appBarTheme: AppBarTheme(
+    color: Color(0xFF1F1F1F),
+    elevation: 4,
+    titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500),
+    iconTheme: IconThemeData(color: Colors.white),
+  ),
+  cardTheme: CardTheme(
+    elevation: 1.5,
+    margin: EdgeInsets.all(8.0),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+    color: Color(0xFF2c2c2e),
+  ),
+  floatingActionButtonTheme: FloatingActionButtonThemeData(
+    backgroundColor: Colors.blue.shade500,
+    foregroundColor: Colors.black,
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.blue.shade500,
+      foregroundColor: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      textStyle: TextStyle(fontSize: 16),
+    ),
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8.0),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8.0),
+      borderSide: BorderSide(color: Colors.blue.shade400, width: 2.0),
+    ),
+    labelStyle: TextStyle(color: Colors.blue.shade300),
+  ),
+);
+// --- AKHIR TEMA ---
+
+const String _themeModeKey = 'themeMode';
 
 void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  void _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeModeString = prefs.getString(_themeModeKey);
+    if (themeModeString != null) {
+      setState(() {
+        _themeMode = ThemeMode.values.firstWhere(
+          (e) => e.toString() == themeModeString,
+          orElse: () => ThemeMode.system,
+        );
+      });
+    }
+  }
+
+  void _changeThemeMode(ThemeMode themeMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, themeMode.toString());
+    setState(() {
+      _themeMode = themeMode;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Catatan App Flutter',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: _themeMode,
+      home: NotesScreen(
+        currentThemeMode: _themeMode,
+        onThemeModeChanged: _changeThemeMode,
       ),
-      home: NotesScreen(),
     );
   }
 }
 
 class NotesScreen extends StatefulWidget {
+  final ThemeMode currentThemeMode;
+  final Function(ThemeMode) onThemeModeChanged;
+
+  NotesScreen({
+    required this.currentThemeMode,
+    required this.onThemeModeChanged,
+  });
+
   @override
   _NotesScreenState createState() => _NotesScreenState();
 }
@@ -57,23 +211,35 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
+  void _navigateToViewNoteScreen(Note note) async {
+    final resultFromView = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NoteViewScreen(note: note)),
+    );
+
+    if (resultFromView == true) { // Jika NoteViewScreen di-pop dan memberi sinyal ada perubahan
+      _loadNotes();
+    }
+  }
+
+  // Fungsi _navigateToEditNoteScreen mungkin tidak dipanggil langsung dari sini lagi,
+  // tapi kita biarkan untuk referensi atau penggunaan lain jika ada.
   void _navigateToEditNoteScreen(Note note) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => EditNoteScreen(note: note)),
     );
 
-    if (result == true) {
+    if (result is Note || result == true) {
       _loadNotes();
     }
   }
 
-  // --- FUNGSI BARU UNTUK DIALOG KONFIRMASI HAPUS ---
   Future<void> _showDeleteConfirmationDialog(String noteId, String noteTitle) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // Pengguna harus memilih salah satu aksi
-      builder: (BuildContext context) {
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text('Konfirmasi Hapus'),
           content: SingleChildScrollView(
@@ -87,16 +253,16 @@ class _NotesScreenState extends State<NotesScreen> {
             TextButton(
               child: Text('Batal'),
               onPressed: () {
-                Navigator.of(context).pop(); // Tutup dialog
+                Navigator.of(dialogContext).pop();
               },
             ),
             TextButton(
-              child: Text('Hapus', style: TextStyle(color: Colors.red)),
+              child: Text('Hapus', style: TextStyle(color: Theme.of(context).colorScheme.error)),
               onPressed: () async {
-                Navigator.of(context).pop(); // Tutup dialog dulu
+                Navigator.of(dialogContext).pop();
                 try {
                   await apiService.deleteNote(noteId);
-                  _loadNotes(); // Refresh daftar catatan
+                  _loadNotes();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Catatan "$noteTitle" berhasil dihapus')),
@@ -116,14 +282,70 @@ class _NotesScreenState extends State<NotesScreen> {
       },
     );
   }
-  // --- AKHIR FUNGSI DIALOG HAPUS ---
+
+  void _showThemePickerDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text('Pilih Tema Aplikasi'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              RadioListTile<ThemeMode>(
+                title: const Text('Terang'),
+                value: ThemeMode.light,
+                groupValue: widget.currentThemeMode,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    widget.onThemeModeChanged(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: const Text('Gelap'),
+                value: ThemeMode.dark,
+                groupValue: widget.currentThemeMode,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    widget.onThemeModeChanged(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: const Text('Sistem'),
+                value: ThemeMode.system,
+                groupValue: widget.currentThemeMode,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    widget.onThemeModeChanged(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screenPadding = MediaQuery.of(context).padding;
+    final horizontalPadding = 12.0;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Daftar Catatan Saya'),
         actions: [
+          IconButton(
+            icon: Icon(Icons.brightness_6_outlined),
+            tooltip: 'Ganti Tema',
+            onPressed: _showThemePickerDialog,
+          ),
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: _loadNotes,
@@ -154,47 +376,73 @@ class _NotesScreenState extends State<NotesScreen> {
               return Center(child: Text('Belum ada catatan. Silakan tambahkan!'));
             }
 
-            return ListView.builder(
+            return GridView.builder(
+              padding: EdgeInsets.only(
+                left: horizontalPadding,
+                right: horizontalPadding,
+                top: 16.0,
+                bottom: screenPadding.bottom + 80,
+              ),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10.0,
+                mainAxisSpacing: 10.0,
+                childAspectRatio: 0.85,
+              ),
               itemCount: notes.length,
               itemBuilder: (context, index) {
                 final note = notes[index];
-                return Card(
-                  margin: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                  child: ListTile(
-                    title: Text(note.title, style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      note.content.length > 100
-                          ? '${note.content.substring(0, 100)}...'
-                          : note.content,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                return InkWell(
+                  onTap: () {
+                    _navigateToViewNoteScreen(note);
+                  },
+                  borderRadius: BorderRadius.circular(12.0), // Sesuai CardTheme
+                  child: Card(
+                    // Margin, shape, dan color diambil dari CardTheme
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            note.title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 6.0),
+                          Expanded(
+                            child: Text(
+                              note.content,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(height: 8.0),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                                tooltip: 'Hapus Catatan',
+                                onPressed: () {
+                                  _showDeleteConfirmationDialog(note.id, note.title);
+                                },
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
                     ),
-                    // Ganti trailing Text dengan Row untuk tombol Edit dan Delete
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min, // Agar Row tidak memakan semua space
-                      children: <Widget>[
-                        IconButton(
-                          icon: Icon(Icons.edit, color: Colors.blue),
-                          tooltip: 'Edit Catatan',
-                          onPressed: () {
-                            _navigateToEditNoteScreen(note);
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          tooltip: 'Hapus Catatan',
-                          onPressed: () {
-                            _showDeleteConfirmationDialog(note.id, note.title);
-                          },
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      // Kamu bisa biarkan onTap untuk edit, atau hapus jika sudah ada tombol edit khusus
-                      // _navigateToEditNoteScreen(note);
-                      // Atau jika ingin onTap tetap berfungsi sebagai view detail (jika ada halaman detail)
-                      print('Tapped on note ID: ${note.id}');
-                    },
                   ),
                 );
               },

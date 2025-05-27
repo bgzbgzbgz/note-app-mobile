@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/note.dart'; //
 
 class ApiService {
-  static const String _baseUrl = 'http://localhost/note_api/index.php/api/'; // SESUAIKAN INI!
+  static const String _baseUrl = 'http://10.252.133.79/note_api/index.php/api/'; // SESUAIKAN INI!
   // Jika pakai emulator Android Studio/AVD default, ganti dengan:
   // static const String _baseUrl = 'http://10.0.2.2/note_api/index.php/api/';
   // Jika pakai HP fisik di WiFi yang sama, ganti dengan IP komputermu:
