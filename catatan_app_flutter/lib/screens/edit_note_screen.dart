@@ -1,18 +1,31 @@
+// lib/screens/edit_note_screen.dart
 import 'package:flutter/material.dart';
-// Nanti kita akan butuh ApiService di sini juga
-import '../services/api_service.dart'; 
+import '../services/api_service.dart';
+import '../models/note.dart'; // Kita butuh model Note
 
-class AddNoteScreen extends StatefulWidget {
+class EditNoteScreen extends StatefulWidget {
+  final Note note; // Menerima note yang akan diedit
+
+  EditNoteScreen({required this.note}); // Constructor
+
   @override
-  _AddNoteScreenState createState() => _AddNoteScreenState();
+  _EditNoteScreenState createState() => _EditNoteScreenState();
 }
 
-class _AddNoteScreenState extends State<AddNoteScreen> {
+class _EditNoteScreenState extends State<EditNoteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final ApiService apiService = ApiService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Isi controller dengan data note yang ada
+    _titleController.text = widget.note.title;
+    _contentController.text = widget.note.content;
+  }
 
   @override
   void dispose() {
@@ -21,50 +34,33 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     super.dispose();
   }
 
-  void _saveNote() async {
+  void _updateNote() async {
     if (_formKey.currentState!.validate()) {
-      if (!mounted) return; // Keluar jika sudah tidak mounted
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
       });
 
       try {
-        await apiService.createNote(
-          _titleController.text,
-          _contentController.text,
+        // Panggil updateNote dari ApiService
+        await apiService.updateNote(
+          widget.note.id, // Kirim ID catatan yang akan diupdate
+          _titleController.text, // Kirim judul baru
+          _contentController.text, // Kirim konten baru
         );
         
-        if (!mounted) return; // Keluar jika sudah tidak mounted
-        Navigator.pop(context, true); 
-        // Setelah pop, widget ini sudah tidak ada, jadi tidak ada setState lagi di sini.
+        if (!mounted) return; // Cek lagi sebelum pop
+        Navigator.pop(context, true); // Kirim true untuk refresh list di NotesScreen
 
       } catch (e) {
-        if (!mounted) return; // Keluar jika sudah tidak mounted
+        if (!mounted) return; // Cek lagi sebelum setState dan SnackBar
         setState(() {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan catatan: $e')),
+          SnackBar(content: Text('Gagal memperbarui catatan: $e')),
         );
       }
-      // Blok kode simulasi di bawah ini seharusnya sudah dihapus atau dikomentari
-      /* // --- AKHIR BAGIAN API --- // (Komentar ini juga bisa dihapus)
-
-      // Untuk sekarang, kita simulasi berhasil dan kembali (BLOK INI DIHAPUS/DIKOMENTARI)
-      print('Judul: ${_titleController.text}');
-      print('Isi: ${_contentController.text}');
-      await Future.delayed(Duration(seconds: 1)); // Simulasi delay
-
-      // Pengecekan mounted sebelum setState ini juga baik,
-      // tapi jika blok ini dihapus, maka tidak diperlukan lagi.
-      if (!mounted) return; 
-      setState(() {
-        _isLoading = false;
-      });
-      // Beri tanda kalau ada perubahan data saat kembali (BLOK INI DIHAPUS/DIKOMENTARI)
-      if (!mounted) return;
-      Navigator.pop(context, true); 
-      */
     }
   }
 
@@ -72,7 +68,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tambah Catatan Baru'),
+        title: Text('Edit Catatan'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -107,8 +103,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
               _isLoading
                   ? Center(child: CircularProgressIndicator())
                   : ElevatedButton(
-                      onPressed: _saveNote,
-                      child: Text('Simpan Catatan'),
+                      onPressed: _updateNote,
+                      child: Text('Simpan Perubahan'),
                     ),
             ],
           ),

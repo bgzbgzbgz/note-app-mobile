@@ -1,32 +1,16 @@
-import 'dart:convert'; // Untuk json.decode
-import 'package:http/http.dart' as http; // Package http yang tadi kita tambahkan
-import '../models/note.dart'; // Import model Note kita
+// lib/services/api_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../models/note.dart'; //
 
 class ApiService {
-  // =======================================================================
-  // PENTING: Sesuaikan _baseUrl dengan alamat IP komputermu!
-  // =======================================================================
-  // Jika kamu menjalankan Flutter di EMULATOR ANDROID:
-  // Gunakan 'http://10.0.2.2/nama_folder_api_mu/index.php/api/'
-  //
-  // Jika kamu menjalankan Flutter di HP ANDROID FISIK (via USB debugging)
-  // dan HP terkoneksi ke WiFi yang SAMA dengan komputermu:
-  // 1. Cari tahu IP Address komputermu di jaringan WiFi tersebut.
-  //    - Di Windows: buka CMD, ketik `ipconfig`, cari "IPv4 Address" di bawah adapter WiFi.
-  //    - Di macOS/Linux: buka Terminal, ketik `ifconfig` atau `ip addr`, cari IP di interface WiFi.
-  // 2. Gunakan IP tersebut, contoh: 'http://192.168.1.10/nama_folder_api_mu/index.php/api/'
-  //
-  // Nama folder API-mu adalah 'note_api'
-  // Jadi contohnya:
-  // static const String _baseUrl = 'http://10.0.2.2/note_api/index.php/api/'; // Untuk Emulator
-  // atau
-  // static const String _baseUrl = 'http://192.168.YOUR.IP/note_api/index.php/api/'; // Untuk HP Fisik
-  // =======================================================================
-  static const String _baseUrl = 'http://localhost/note_api/index.php/api/'; // <--- SESUAIKAN INI!
+  static const String _baseUrl = 'http://localhost/note_api/index.php/api/'; // SESUAIKAN INI!
+  // Jika pakai emulator Android Studio/AVD default, ganti dengan:
+  // static const String _baseUrl = 'http://10.0.2.2/note_api/index.php/api/';
+  // Jika pakai HP fisik di WiFi yang sama, ganti dengan IP komputermu:
+  // static const String _baseUrl = 'http://IP_KOMPUTER_KAMU/note_api/index.php/api/';
 
-  // Fungsi untuk mengambil semua catatan
   Future<List<Note>> fetchNotes() async {
-    // ... (kode fetchNotes tetap sama seperti yang sudah berhasil) ...
     final response = await http.get(Uri.parse('${_baseUrl}notes'));
 
     if (response.statusCode == 200) {
@@ -44,49 +28,68 @@ class ApiService {
     }
   }
 
-  // --- FUNGSI BARU UNTUK CREATE NOTE ---
   Future<Note> createNote(String title, String content) async {
     final response = await http.post(
-      Uri.parse('${_baseUrl}notes'), // Endpoint untuk POST adalah /notes
+      Uri.parse('${_baseUrl}notes'), //
       headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8', // Penting untuk mengirim body JSON
+        'Content-Type': 'application/json; charset=UTF-8', //
       },
-      body: jsonEncode(<String, String>{ // Encode data Dart Map menjadi String JSON
+      body: jsonEncode(<String, String>{ //
         'title': title,
         'content': content,
       }),
     );
 
-    if (response.statusCode == 201) { // API kita mengembalikan 201 Created saat sukses
-      // Jika server membuat catatan baru dengan sukses, parse JSON responsnya
-      // API kita mengembalikan { "status": true, "message": "...", "data": {note_baru} }
+    if (response.statusCode == 201) { //
       Map<String, dynamic> jsonResponse = json.decode(response.body);
-      return Note.fromJson(jsonResponse['data']); // Ambil objek note dari field 'data'
+      return Note.fromJson(jsonResponse['data']); //
     } else {
-      // Jika server gagal, lempar exception dengan detail error
       throw Exception('Gagal membuat catatan. Status: ${response.statusCode}. Body: ${response.body}');
     }
   }
 
-  // --- NANTI KAMU BISA TAMBAH FUNGSI LAIN DI SINI UNTUK CREATE, UPDATE, DELETE ---
-  // Contoh (belum diimplementasikan sepenuhnya):
-  //
-  // Future<Note> createNote(String title, String content) async {
-  //   final response = await http.post(
-  //     Uri.parse('${_baseUrl}notes'),
-  //     headers: <String, String>{
-  //       'Content-Type': 'application/json; charset=UTF-8',
-  //     },
-  //     body: jsonEncode(<String, String>{
-  //       'title': title,
-  //       'content': content,
-  //     }),
-  //   );
-  //   if (response.statusCode == 201) { // 201 Created
-  //     Map<String, dynamic> jsonResponse = json.decode(response.body);
-  //     return Note.fromJson(jsonResponse['data']);
-  //   } else {
-  //     throw Exception('Gagal membuat catatan. Status: ${response.statusCode}. Body: ${response.body}');
-  //   }
-  // }
+  Future<Note> updateNote(String id, String title, String content) async {
+    final response = await http.put(
+      Uri.parse('${_baseUrl}notes/$id'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'title': title,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> jsonResponse = json.decode(response.body);
+      return Note.fromJson(jsonResponse['data']);
+    } else {
+      print('Failed to update note. Status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      throw Exception('Gagal memperbarui catatan. Status: ${response.statusCode}. Body: ${response.body}');
+    }
+  }
+
+  // --- FUNGSI BARU UNTUK DELETE NOTE ---
+  Future<void> deleteNote(String id) async {
+    final response = await http.delete(
+      Uri.parse('${_baseUrl}notes/$id'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8', // Meskipun delete mungkin tidak butuh body, header ini umum
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Berhasil dihapus, tidak perlu mengembalikan data spesifik
+      // API kita mengembalikan: { "status": true, "message": "Note deleted successfully." }
+      // Kita bisa cek `json.decode(response.body)['status'] == true` jika perlu
+      print('Note deleted successfully. Response: ${response.body}');
+    } else {
+      // Gagal menghapus
+      print('Failed to delete note. Status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      throw Exception('Gagal menghapus catatan. Status: ${response.statusCode}. Body: ${response.body}');
+    }
+  }
+  // --- AKHIR FUNGSI DELETE NOTE ---
 }
